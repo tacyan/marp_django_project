@@ -3,14 +3,17 @@
 {% block content %}
 <h1>プレゼンテーション一覧</h1>
 
-<a href="{% url 'create_presentation' %}" class="btn btn-primary mb-3">新規作成</a>
+<div class="btn-group mb-3">
+    <a href="{% url 'create' %}" class="btn btn-primary">新規作成 (Markdown形式)</a>
+    <a href="{% url 'natural_language_create' %}" class="btn btn-success">新規作成 (自然言語形式)</a>
+</div>
 
 {% if presentations %}
 <table class="table">
     <thead>
         <tr>
             <th>タイトル</th>
-            <th>テーマ</th>
+            <th>種類</th>
             <th>更新日時</th>
             <th>アクション</th>
         </tr>
@@ -19,11 +22,24 @@
         {% for presentation in presentations %}
         <tr>
             <td>{{ presentation.title }}</td>
-            <td>{{ presentation.theme }}</td>
+            <td>
+                {% if presentation.is_natural_language %}
+                自然言語
+                {% if presentation.use_template %}
+                (テンプレート使用)
+                {% endif %}
+                {% else %}
+                Markdown ({{ presentation.theme }})
+                {% endif %}
+            </td>
             <td>{{ presentation.updated_at|date:"Y/m/d H:i" }}</td>
             <td>
-                <a href="{% url 'edit_presentation' presentation.pk %}" class="btn btn-sm btn-info">編集</a>
-                <a href="{% url 'download_pptx' presentation.pk %}" class="btn btn-sm btn-success">PPTXダウンロード</a>
+                {% if presentation.is_natural_language %}
+                <a href="{% url 'edit' presentation.pk %}" class="btn btn-sm btn-info">編集</a>
+                {% else %}
+                <a href="{% url 'edit' presentation.pk %}" class="btn btn-sm btn-info">編集</a>
+                {% endif %}
+                <a href="{% url 'download' presentation.pk %}" class="btn btn-sm btn-success">PPTXダウンロード</a>
             </td>
         </tr>
         {% endfor %}

@@ -1,15 +1,36 @@
 """
-プレゼンテーションアプリのURLルーティング設定
+プレゼンテーションアプリのURLパターン定義
 
-このモジュールは、プレゼンテーションアプリの各ビュー関数へのURLパスを定義します。
+このモジュールは、プレゼンテーション管理アプリケーションのURLパターンを定義します。
+各エンドポイントは特定のビュー関数にマッピングされています。
 """
 
 from django.urls import path
+from django.contrib.auth.views import LogoutView
 from . import views
 
 urlpatterns = [
-    path('', views.presentation_list, name='presentation_list'),
-    path('create/', views.create_presentation, name='create_presentation'),
-    path('edit/<int:pk>/', views.edit_presentation, name='edit_presentation'),
-    path('download/<int:pk>/', views.download_pptx, name='download_pptx'),
+    # 基本ページ
+    path('', views.index, name='index'),
+    path('list/', views.list_presentations, name='list'),
+    
+    # プレゼンテーション作成
+    path('create/', views.create, name='create'),
+    path('create/natural-language/', views.natural_language_create, name='natural_language_create'),
+    
+    # プレゼンテーション操作
+    path('<int:pk>/', views.detail, name='detail'),
+    path('<int:pk>/edit/', views.edit, name='edit'),
+    path('<int:pk>/download/', views.download, name='download'),
+    path('<int:pk>/delete/', views.delete, name='delete'),
+    
+    # API
+    path('api/preview-natural-language/', views.preview_natural_language, name='preview_natural_language'),
+    
+    # テンプレート管理
+    path('template/info/', views.template_info, name='template_info'),
+    path('template/edit/', views.edit_template, name='edit_template'),
+    
+    # 認証
+    path('logout/', LogoutView.as_view(next_page='index', http_method_names=['get', 'post']), name='logout'),
 ] 

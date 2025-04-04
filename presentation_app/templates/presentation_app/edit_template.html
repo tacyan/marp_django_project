@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}テンプレート管理 - プレゼンテーションジェネレーター{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mb-4">テンプレート管理</h1>
+            
+            {% if success_message %}
+            <div class="alert alert-success">
+                {{ success_message }}
+            </div>
+            {% endif %}
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">テンプレート情報</h2>
+                </div>
+                <div class="card-body">
+                    {% if template_info.exists %}
+                        <div class="mb-3">
+                            <p><strong>テンプレートファイル:</strong> {{ template_info.path }}</p>
+                            <p><strong>スライド数:</strong> {{ template_info.slide_count }}</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h3 class="h6">スライドレイアウト情報</h3>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>インデックス</th>
+                                            <th>レイアウト名</th>
+                                            <th>サンプルタイトル</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for slide in template_info.slides %}
+                                        <tr>
+                                            <td>{{ slide.index }}</td>
+                                            <td>{{ slide.layout_name }}</td>
+                                            <td>{{ slide.sample_title|default:"(なし)" }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            {{ template_info.message }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">テンプレートアップロード</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="template_file" class="form-label">テンプレートファイル (.pptx)</label>
+                            <input type="file" name="template_file" id="template_file" class="form-control" accept=".pptx" required>
+                            <div class="form-text">
+                                PowerPoint (.pptx) ファイルをアップロードしてください。このテンプレートは自然言語プレゼンテーションの生成に使用されます。
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <p><strong>テンプレートの要件と注意事項:</strong></p>
+                            <ul>
+                                <li>テンプレートの1枚目はタイトルスライドとして使用されます</li>
+                                <li>2枚目以降は内容スライドとして使用されます</li>
+                                <li>スライドには適切なプレースホルダーが必要です（タイトル、内容など）</li>
+                                <li>現在のテンプレートは上書きされるため、必要な場合はバックアップを取ってください</li>
+                            </ul>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">アップロード</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <a href="{% url 'list' %}" class="btn btn-secondary">プレゼンテーション一覧に戻る</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
