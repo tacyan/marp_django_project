@@ -13,7 +13,7 @@
     {% csrf_token %}
     <div class="form-group mb-3">
         <label for="title">タイトル</label>
-        <input type="text" class="form-control" id="title" name="title" required>
+        <input type="text" class="form-control" id="title" name="title" value="{% if edit_mode %}{{ presentation.title }}{% endif %}" required>
     </div>
     
     {% if template_info.exists %}
@@ -30,7 +30,7 @@
     
     <div class="form-group mb-3">
         <label for="content">内容 (自然言語形式)</label>
-        <textarea class="form-control" id="content" name="content" rows="15" required>{{ sample_content }}</textarea>
+        <textarea class="form-control" id="content" name="content" rows="15" required>{% if edit_mode %}{{ form.content.value }}{% else %}{{ sample_content }}{% endif %}</textarea>
     </div>
     
     <button type="submit" class="btn btn-primary">保存</button>

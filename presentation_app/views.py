@@ -129,7 +129,8 @@ def natural_language_create(request):
     context = {
         'form': form, 
         'action': 'natural_language_create',
-        'template_info': template_info
+        'template_info': template_info,
+        'sample_content': NaturalLanguageForm.SAMPLE_CONTENT
     }
     return render(request, 'presentation_app/create_natural.html', context)
 
@@ -207,7 +208,8 @@ def edit(request, pk):
             'form': form, 
             'action': 'edit', 
             'presentation': presentation,
-            'template_info': template_info
+            'template_info': template_info,
+            'edit_mode': True
         }
     
     return render(request, template, context)
