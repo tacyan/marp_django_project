@@ -23,7 +23,7 @@
         <tr>
             <td>{{ presentation.title }}</td>
             <td>
-                {% if presentation.is_natural_language %}
+                {% if presentation.content_type == 'natural_language' %}
                 自然言語
                 {% if presentation.use_template %}
                 (テンプレート使用)
@@ -34,11 +34,7 @@
             </td>
             <td>{{ presentation.updated_at|date:"Y/m/d H:i" }}</td>
             <td>
-                {% if presentation.is_natural_language %}
                 <a href="{% url 'edit' presentation.pk %}" class="btn btn-sm btn-info">編集</a>
-                {% else %}
-                <a href="{% url 'edit' presentation.pk %}" class="btn btn-sm btn-info">編集</a>
-                {% endif %}
                 <a href="{% url 'download' presentation.pk %}" class="btn btn-sm btn-success">PPTXダウンロード</a>
             </td>
         </tr>

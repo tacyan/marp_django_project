@@ -75,7 +75,7 @@ def create(request):
     else:
         form = PresentationForm()
     
-    return render(request, 'presentation_app/create.html', {'form': form, 'action': 'create'})
+    return render(request, 'presentation_app/create.html', {'form': form, 'action': 'create', 'sample_content': PresentationForm.SAMPLE_CONTENT})
 
 @login_required
 def natural_language_create(request):

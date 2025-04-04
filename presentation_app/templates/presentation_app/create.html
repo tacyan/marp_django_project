@@ -1,27 +1,27 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>新規プレゼンテーション作成</h1>
+<h1>{% if action == 'edit' %}プレゼンテーション編集{% else %}新規プレゼンテーション作成{% endif %}</h1>
 
 <form method="post">
     {% csrf_token %}
     <div class="form-group">
         <label for="title">タイトル</label>
-        <input type="text" class="form-control" id="title" name="title" required>
+        <input type="text" class="form-control" id="title" name="title" value="{% if action == 'edit' %}{{ presentation.title }}{% endif %}" required>
     </div>
     
     <div class="form-group">
         <label for="theme">テーマ</label>
         <select class="form-control" id="theme" name="theme">
-            <option value="default">デフォルト</option>
-            <option value="gaia">Gaia</option>
-            <option value="uncover">Uncover</option>
+            <option value="default" {% if action == 'edit' and presentation.theme == 'default' %}selected{% endif %}>デフォルト</option>
+            <option value="gaia" {% if action == 'edit' and presentation.theme == 'gaia' %}selected{% endif %}>Gaia</option>
+            <option value="uncover" {% if action == 'edit' and presentation.theme == 'uncover' %}selected{% endif %}>Uncover</option>
         </select>
     </div>
     
     <div class="form-group">
         <label for="content">内容 (Markdown形式)</label>
-        <textarea class="form-control" id="content" name="content" rows="15" required>{{ sample_content }}</textarea>
+        <textarea class="form-control" id="content" name="content" rows="15" required>{% if action == 'edit' %}{{ form.content.value }}{% else %}{{ sample_content }}{% endif %}</textarea>
     </div>
     
     <button type="submit" class="btn btn-primary">保存</button>
