@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>{{ presentation.title }} を編集</h1>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="title">タイトル</label>
+        <input type="text" class="form-control" id="title" name="title" value="{{ presentation.title }}" required>
+    </div>
+    
+    <div class="form-group">
+        <label for="theme">テーマ</label>
+        <select class="form-control" id="theme" name="theme">
+            <option value="default" {% if presentation.theme == 'default' %}selected{% endif %}>デフォルト</option>
+            <option value="gaia" {% if presentation.theme == 'gaia' %}selected{% endif %}>Gaia</option>
+            <option value="uncover" {% if presentation.theme == 'uncover' %}selected{% endif %}>Uncover</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label for="content">内容 (Markdown形式)</label>
+        <textarea class="form-control" id="content" name="content" rows="15" required>{{ presentation.content }}</textarea>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">保存</button>
+    <a href="{% url 'download_pptx' presentation.pk %}" class="btn btn-success">PPTXをダウンロード</a>
+</form>
+
+<div class="markdown-preview mt-4">
+    <h3>プレビュー</h3>
+    <div id="preview-area" class="p-3 border">
+        <!-- JavaScriptでプレビュー表示 -->
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    // リアルタイムプレビュー
+    const contentArea = document.getElementById('content');
+    const previewArea = document.getElementById('preview-area');
+    
+    function updatePreview() {
+        previewArea.innerHTML = marked.parse(contentArea.value);
+    }
+    
+    contentArea.addEventListener('input', updatePreview);
+    updatePreview(); // 初期表示
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>新規プレゼンテーション作成</h1>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="title">タイトル</label>
+        <input type="text" class="form-control" id="title" name="title" required>
+    </div>
+    
+    <div class="form-group">
+        <label for="theme">テーマ</label>
+        <select class="form-control" id="theme" name="theme">
+            <option value="default">デフォルト</option>
+            <option value="gaia">Gaia</option>
+            <option value="uncover">Uncover</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label for="content">内容 (Markdown形式)</label>
+        <textarea class="form-control" id="content" name="content" rows="15" required>{{ sample_content }}</textarea>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">保存</button>
+</form>
+
+<div class="markdown-guide mt-4">
+    <h3>Markdownの基本ガイド</h3>
+    <pre>
+# タイトル
+## サブタイトル
+- 箇条書き
+1. 番号付きリスト
+**太字** *斜体*
+[リンク](https://example.com)
+![画像](画像URL)
+
+新しいスライド用に次の行を入れます:
+---
+    </pre>
+</div>
+{% endblock %} 
