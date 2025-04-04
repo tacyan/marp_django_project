@@ -8,6 +8,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from .models import Presentation
 from .services import MarpService
 
@@ -53,6 +54,7 @@ def create_presentation(request):
                 theme=theme,
                 author=request.user
             )
+            messages.success(request, 'プレゼンテーションが作成されました')
             return redirect('edit_presentation', pk=presentation.pk)
     
     # テンプレートサンプルを提供
@@ -102,6 +104,7 @@ def edit_presentation(request, pk):
             presentation.content = content
             presentation.theme = theme
             presentation.save()
+            messages.success(request, 'プレゼンテーションが更新されました')
             return redirect('presentation_list')
     
     return render(request, 'presentation_app/edit.html', {'presentation': presentation})
@@ -120,17 +123,35 @@ def download_pptx(request, pk):
     Returns:
         HTTPレスポンス: PPTXファイルまたはエラーメッセージ
     """
-    presentation = get_object_or_404(Presentation, pk=pk, author=request.user)
-    
-    pptx_content = MarpService.markdown_to_pptx(presentation.content, presentation.theme)
-    
-    if pptx_content:
-        response = HttpResponse(
-            pptx_content,
-            content_type='application/vnd.openxmlformats-officedocument.presentationml.presentation'
-        )
-        filename = f"{presentation.title.replace(' ', '_')}.pptx"
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
-    else:
-        return HttpResponse("PPTX生成に失敗しました", status=500)
+    try:
+        presentation = get_object_or_404(Presentation, pk=pk, author=request.user)
+        
+        # 処理中メッセージをログに出力
+        print(f"プレゼンテーション '{presentation.title}' のPPTX変換を開始します...")
+        
+        # Marp CLIを使用してPPTXを生成
+        pptx_content = MarpService.markdown_to_pptx(presentation.content, presentation.theme)
+        
+        if pptx_content:
+            # 成功時はPPTXファイルを返す
+            response = HttpResponse(
+                pptx_content,
+                content_type='application/vnd.openxmlformats-officedocument.presentationml.presentation'
+            )
+            filename = f"{presentation.title.replace(' ', '_')}.pptx"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            print(f"プレゼンテーション '{presentation.title}' のPPTX変換に成功しました")
+            return response
+        else:
+            # 変換に失敗した場合
+            error_message = "PPTX変換に失敗しました。Marp CLIが正しくインストールされているか確認してください。"
+            messages.error(request, error_message)
+            print(error_message)
+            return redirect('edit_presentation', pk=pk)
+            
+    except Exception as e:
+        # 予期せぬエラーが発生した場合
+        error_message = f"PPTX生成中にエラーが発生しました: {str(e)}"
+        messages.error(request, error_message)
+        print(error_message)
+        return redirect('edit_presentation', pk=pk)
