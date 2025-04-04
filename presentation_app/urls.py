@@ -16,16 +16,12 @@ urlpatterns = [
     
     # プレゼンテーション作成
     path('create/', views.create, name='create'),
-    path('create/natural-language/', views.natural_language_create, name='natural_language_create'),
     
     # プレゼンテーション操作
     path('<int:pk>/', views.detail, name='detail'),
     path('<int:pk>/edit/', views.edit, name='edit'),
     path('<int:pk>/download/', views.download, name='download'),
     path('<int:pk>/delete/', views.delete, name='delete'),
-    
-    # API
-    path('api/preview-natural-language/', views.preview_natural_language, name='preview_natural_language'),
     
     # テンプレート管理
     path('template/info/', views.template_info, name='template_info'),

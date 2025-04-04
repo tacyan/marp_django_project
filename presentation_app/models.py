@@ -17,13 +17,12 @@ class Presentation(models.Model):
     プレゼンテーションモデル
     
     プレゼンテーションの内容とメタデータを保存します。
-    Markdownまたは自然言語のデータからプレゼンテーションを生成するために使用されます。
+    Markdownデータからプレゼンテーションを生成するために使用されます。
     """
     
     # コンテンツタイプの選択肢
     CONTENT_TYPE_CHOICES = [
         ('markdown', 'Markdown'),
-        ('natural_language', '自然言語'),
     ]
     
     # フォントサイズの選択肢
@@ -49,7 +48,6 @@ class Presentation(models.Model):
         default='markdown', 
         verbose_name='コンテンツタイプ'
     )
-    use_template = models.BooleanField(default=False, verbose_name='テンプレート使用')
     font_size = models.CharField(
         max_length=10,
         choices=FONT_SIZE_CHOICES,
@@ -89,11 +87,6 @@ class Presentation(models.Model):
         """
         if self.content_type == 'markdown':
             return 'Markdown'
-        elif self.content_type == 'natural_language':
-            if self.use_template:
-                return '自然言語（テンプレート使用）'
-            else:
-                return '自然言語'
         return 'その他'
     
     def get_font_size_setting(self):

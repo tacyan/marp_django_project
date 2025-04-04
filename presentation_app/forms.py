@@ -2,7 +2,7 @@
 プレゼンテーションアプリのフォームモジュール
 
 このモジュールは、プレゼンテーションの作成と編集に使用するフォームクラスを定義します。
-MarkdownおよびNLPベースのプレゼンテーション用のフォームを提供します。
+Markdownベースのプレゼンテーション用のフォームを提供します。
 """
 
 from django import forms
@@ -59,62 +59,6 @@ class PresentationForm(forms.ModelForm):
             ('gaia', 'Gaia'),
             ('uncover', 'Uncover'),
         ])
-
-class NaturalLanguageForm(forms.ModelForm):
-    """
-    自然言語プレゼンテーション用のフォーム
-    
-    自然言語でプレゼンテーションを作成・編集するためのフォームです。
-    タイトル、内容、テンプレート使用の有無を設定できます。
-    """
-    
-    # 自然言語のサンプルコンテンツ
-    SAMPLE_CONTENT = """スライド: はじめに
-このプレゼンテーションは自然言語から自動生成されています。
-段落ごとに自動的にスライドに変換されます。
-
-スライド: 箇条書きの例
-- こんな感じで箇条書きを書くことができます
-- 2つ目の項目
-- 3つ目の項目
-
-スライド: 文章の例
-これは普通の文章です。長い文章は自動的に文ごとに分割されて箇条書きになります。
-2つ目の文です。このように自動的に整形されます。
-
-スライド: まとめ
-自然言語でプレゼンテーション内容を書くことで、簡単にスライドを作成できます。
-"""
-    
-    # テンプレート使用の選択フィールド
-    use_template = forms.BooleanField(
-        required=False,
-        initial=True,
-        label='テンプレートを使用する',
-        help_text='チェックすると、デザインテンプレートを使用してプレゼンテーションを生成します'
-    )
-    
-    class Meta:
-        model = Presentation
-        fields = ['title', 'content']
-        widgets = {
-            'content': forms.Textarea(attrs={'rows': 20, 'class': 'nl-editor'}),
-        }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # 初期値として、新規作成時のみサンプルを設定
-        if not self.instance.pk and not self.initial.get('content'):
-            self.initial['content'] = self.SAMPLE_CONTENT
-        
-        # インスタンスがある場合はテンプレート使用フラグを設定
-        if self.instance.pk:
-            self.initial['use_template'] = self.instance.use_template
-        
-        # フィールドの説明
-        self.fields['title'].label = 'タイトル'
-        self.fields['content'].label = '自然言語内容'
         
 class TemplateUploadForm(forms.Form):
     """

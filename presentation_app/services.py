@@ -25,13 +25,6 @@ class MarpService:
     Markdownをプレゼンテーション形式（PPTX）に変換するためのサービスメソッドを提供します。
     """
     
-    # 1スライドあたりの文字数の目安（フォントサイズ別）
-    CHARS_PER_SLIDE = {
-        'large': 100,    # 大きいフォント向け（タイトルスライドなど）
-        'medium': 200,   # 中くらいのフォント向け（一般的なコンテンツスライド）
-        'small': 300     # 小さいフォント向け（詳細情報スライド）
-    }
-    
     @staticmethod
     def markdown_to_pptx(markdown_content, theme='default'):
         """
@@ -183,324 +176,8 @@ theme: {theme}
         return None
         
     @staticmethod
-    def natural_language_to_pptx(title, content, template_path=None):
-        """
-        自然言語からPPTXを生成する
-        
-        自然言語の内容を解析し、プレゼンテーションスライドに変換します。
-        テンプレートが指定されている場合は、そのテンプレートを基に生成します。
-        
-        Args:
-            title (str): プレゼンテーションのタイトル
-            content (str): 自然言語で記述されたプレゼンテーション内容
-            template_path (str, optional): 使用するテンプレートPPTXのパス
-            
-        Returns:
-            bytes: 生成されたPPTXファイルのバイナリ内容、失敗時はNone
-        """
-        try:
-            # 一時ディレクトリを作成
-            temp_dir = tempfile.mkdtemp()
-            output_path = os.path.join(temp_dir, 'presentation.pptx')
-            
-            # テンプレートがある場合はそれをコピーし、編集する
-            prs = MarpService._create_presentation_with_template(template_path)
-            
-            # スライド内容を解析し、文字量に基づいて分割する
-            slides_content = MarpService._parse_natural_language_to_slides_with_sizing(content)
-            
-            # テンプレートの情報を取得
-            template_layouts = MarpService._analyze_template_layouts(prs)
-            max_slides = len(prs.slides)
-            
-            # 既存のスライドを全て削除
-            for _ in range(len(prs.slides)):
-                r_id = prs.slides._sldIdLst[0].rId
-                prs.part.drop_rel(r_id)
-                prs.slides._sldIdLst.remove(prs.slides._sldIdLst[0])
-            
-            # タイトルスライドを追加
-            if template_layouts and 'title' in template_layouts:
-                title_layout = template_layouts['title']['layout']
-            else:
-                title_layout = prs.slide_layouts[0]  # デフォルトのタイトルレイアウト
-            
-            title_slide = prs.slides.add_slide(title_layout)
-            
-            # タイトルとサブタイトルを設定
-            if hasattr(title_slide, 'shapes') and hasattr(title_slide.shapes, 'title') and title_slide.shapes.title:
-                title_slide.shapes.title.text = title
-            
-            # サブタイトルがある場合は設定
-            for shape in title_slide.placeholders:
-                if shape.placeholder_format.type == 2:  # 2はサブタイトル
-                    shape.text = "作成日: " + MarpService._get_current_date_japanese()
-            
-            # 内容スライドを追加
-            for i, slide_content in enumerate(slides_content):
-                # 必要なスライド数が最大数を超える場合、ランダムにレイアウトを選択
-                if i >= max_slides - 1:  # -1はタイトルスライド分
-                    # コンテンツスライドのレイアウトをランダムに選択
-                    content_layouts = [l for k, l in template_layouts.items() if k != 'title']
-                    if content_layouts:
-                        selected_layout = random.choice(content_layouts)
-                        content_slide_layout = selected_layout['layout']
-                    else:
-                        content_slide_layout = prs.slide_layouts[1]  # デフォルトのコンテンツレイアウト
-                else:
-                    # テンプレートのレイアウトを順番に使用
-                    layout_index = (i + 1) % max_slides  # +1はタイトルスライドをスキップ
-                    content_slide_layout = prs.slide_masters[0].slide_layouts[layout_index]
-                
-                slide = prs.slides.add_slide(content_slide_layout)
-                
-                # タイトルを設定
-                if hasattr(slide, 'shapes') and hasattr(slide.shapes, 'title') and slide.shapes.title:
-                    slide.shapes.title.text = slide_content['title']
-                
-                # 内容を設定
-                content_placeholder = None
-                for shape in slide.placeholders:
-                    if shape.placeholder_format.type != 1:  # 1はタイトル
-                        content_placeholder = shape
-                        break
-                
-                if content_placeholder:
-                    text_frame = content_placeholder.text_frame
-                    text_frame.clear()  # 既存のテキストをクリア
-                    
-                    for i, point in enumerate(slide_content['points']):
-                        if i == 0:
-                            p = text_frame.paragraphs[0]
-                        else:
-                            p = text_frame.add_paragraph()
-                        p.text = point
-                        p.level = 0  # 最上位レベル
-            
-            # PPTXファイルを保存
-            prs.save(output_path)
-            
-            # 生成されたPPTXファイルを読み込む
-            with open(output_path, 'rb') as f:
-                pptx_content = f.read()
-            
-            return pptx_content
-            
-        except Exception as e:
-            print(f"PPTXの生成中にエラーが発生しました: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
-            
-        finally:
-            # 一時ファイルの削除
-            try:
-                if os.path.exists(output_path):
-                    os.remove(output_path)
-                if os.path.exists(temp_dir):
-                    os.rmdir(temp_dir)
-            except Exception as e:
-                print(f"一時ファイルの削除中にエラーが発生しました: {e}")
-    
-    @staticmethod
-    def _create_presentation_with_template(template_path):
-        """
-        テンプレートをベースにプレゼンテーションを作成
-        
-        Args:
-            template_path (str, optional): 使用するテンプレートPPTXのパス
-            
-        Returns:
-            Presentation: 作成されたプレゼンテーションオブジェクト
-        """
-        if template_path and os.path.exists(template_path):
-            prs = Presentation(template_path)
-            print(f"テンプレート '{template_path}' を使用してプレゼンテーションを作成します")
-        else:
-            prs = Presentation()
-            print(f"新規プレゼンテーションを作成します（テンプレートなし）")
-        
-        return prs
-    
-    @staticmethod
-    def _analyze_template_layouts(presentation):
-        """
-        テンプレートのレイアウト情報を解析
-        
-        Args:
-            presentation (Presentation): 解析するプレゼンテーション
-            
-        Returns:
-            dict: レイアウト情報
-        """
-        layouts = {}
-        
-        # スライドマスターからレイアウトを取得
-        for i, slide_layout in enumerate(presentation.slide_masters[0].slide_layouts):
-            layout_info = {
-                'layout': slide_layout,
-                'placeholders': {}
-            }
-            
-            # プレースホルダーを分析
-            for placeholder in slide_layout.placeholders:
-                ph_type = placeholder.placeholder_format.type
-                layout_info['placeholders'][ph_type] = {
-                    'idx': placeholder.placeholder_format.idx,
-                    'type': ph_type,
-                    'name': placeholder.name
-                }
-            
-            # タイトルスライドの判定
-            is_title_slide = False
-            for ph in layout_info['placeholders'].values():
-                if ph['name'] and ('タイトル' in ph['name'] or 'Title' in ph['name']):
-                    is_title_slide = True
-            
-            if is_title_slide and i == 0:
-                layouts['title'] = layout_info
-            else:
-                layouts[f'content_{i}'] = layout_info
-        
-        return layouts
-    
-    @staticmethod
-    def _parse_natural_language_to_slides_with_sizing(content):
-        """
-        自然言語のテキストをスライド形式に解析し、文字量に基づいて分割
-        
-        Args:
-            content (str): 自然言語のテキスト
-            
-        Returns:
-            list: スライド情報のリスト（文字量に基づいて分割）
-        """
-        # まず通常の方法でスライドを解析
-        slides = MarpService._parse_natural_language_to_slides(content)
-        sized_slides = []
-        
-        # 各スライドを文字量に基づいて分割
-        for slide in slides:
-            title = slide['title']
-            points = slide['points']
-            
-            # ポイントの総文字数を計算
-            total_chars = sum(len(point) for point in points)
-            
-            # 文字の大きさに基づいて1スライドあたりの文字数を決定
-            if "概要" in title or "まとめ" in title or len(title) <= 10:
-                chars_per_slide = MarpService.CHARS_PER_SLIDE['large']
-                font_size = 'large'
-            elif len(points) > 0 and total_chars / len(points) >= 50:  # 平均文字数が多い場合
-                chars_per_slide = MarpService.CHARS_PER_SLIDE['small']
-                font_size = 'small'
-            else:
-                chars_per_slide = MarpService.CHARS_PER_SLIDE['medium']
-                font_size = 'medium'
-            
-            # 必要なスライド数を計算
-            num_slides_needed = 1
-            if total_chars > 0:
-                num_slides_needed = math.ceil(total_chars / chars_per_slide)
-            
-            if num_slides_needed <= 1:
-                # 1スライドで足りる場合はそのまま追加
-                sized_slides.append({
-                    'title': title,
-                    'points': points,
-                    'font_size': font_size
-                })
-            else:
-                # 複数スライドに分割する必要がある場合
-                points_per_slide = math.ceil(len(points) / num_slides_needed)
-                
-                for i in range(num_slides_needed):
-                    start_idx = i * points_per_slide
-                    end_idx = min((i + 1) * points_per_slide, len(points))
-                    slide_points = points[start_idx:end_idx]
-                    
-                    # スライド番号を付与（2枚目以降）
-                    if i > 0:
-                        slide_title = f"{title} ({i+1}/{num_slides_needed})"
-                    else:
-                        slide_title = title
-                    
-                    sized_slides.append({
-                        'title': slide_title,
-                        'points': slide_points,
-                        'font_size': font_size
-                    })
-        
-        return sized_slides
-    
-    @staticmethod
-    def _parse_natural_language_to_slides(content):
-        """
-        自然言語のテキストをスライド形式に解析する
-        
-        Args:
-            content (str): 自然言語のテキスト
-            
-        Returns:
-            list: スライド情報のリスト
-        """
-        slides = []
-        
-        # 段落で分割
-        paragraphs = content.split('\n\n')
-        
-        current_slide = None
-        
-        for para in paragraphs:
-            para = para.strip()
-            if not para:
-                continue
-                
-            # 新しいスライドの開始（「スライド:」または「テーマ:」で始まる行）
-            if para.lower().startswith(('スライド:', 'slide:', 'テーマ:', 'theme:')):
-                # 前のスライドがあれば追加
-                if current_slide:
-                    slides.append(current_slide)
-                
-                # タイトルを抽出
-                title = para.split(':', 1)[1].strip()
-                current_slide = {
-                    'title': title,
-                    'points': []
-                }
-            # 箇条書きのポイント
-            elif para.startswith(('-', '・', '*', '•')):
-                if not current_slide:
-                    current_slide = {
-                        'title': '内容',
-                        'points': []
-                    }
-                point = para[1:].strip()
-                current_slide['points'].append(point)
-            # 通常のテキスト
-            else:
-                if not current_slide:
-                    # 最初の段落はタイトルとして扱う
-                    current_slide = {
-                        'title': para,
-                        'points': []
-                    }
-                else:
-                    # それ以外は箇条書きとして追加
-                    sentences = re.split(r'(?<=[。．.!?])\s*', para)
-                    for sentence in sentences:
-                        if sentence.strip():
-                            current_slide['points'].append(sentence.strip())
-        
-        # 最後のスライドを追加
-        if current_slide:
-            slides.append(current_slide)
-            
-        return slides
-    
-    @staticmethod
     def _get_current_date_japanese():
-        """現在の日付を日本語形式で返す"""
+        """現在の日付を日本語形式で取得する"""
         from datetime import datetime
         now = datetime.now()
         return f"{now.year}年{now.month}月{now.day}日"
@@ -508,87 +185,148 @@ theme: {theme}
     @staticmethod
     def edit_template_pptx(new_template_path=None):
         """
-        テンプレートPPTXを編集する
-        
-        既存のテンプレートPPTXを編集し、新しいテンプレートとして保存します。
-        新しいテンプレートのパスが指定されていない場合は、既存のテンプレートを上書きします。
+        テンプレートPPTXファイルを編集する
         
         Args:
-            new_template_path (str, optional): 新しいテンプレートの保存パス
+            new_template_path (str, optional): 新しいテンプレートファイルのパス
             
         Returns:
             bool: 成功した場合はTrue、失敗した場合はFalse
         """
-        template_path = os.path.join(settings.BASE_DIR, 'template.pptx')
-        
-        if not os.path.exists(template_path):
-            print(f"テンプレートファイルが見つかりません: {template_path}")
-            return False
-        
         try:
-            # テンプレートを読み込む
-            prs = Presentation(template_path)
-            
-            # 保存先パスを決定
-            if not new_template_path:
-                # バックアップを作成
-                backup_path = os.path.join(settings.BASE_DIR, 'template_backup.pptx')
-                shutil.copy2(template_path, backup_path)
-                save_path = template_path
-            else:
-                save_path = new_template_path
-            
-            # テンプレートを保存
-            prs.save(save_path)
-            print(f"テンプレートを保存しました: {save_path}")
+            # 新しいテンプレートパスが指定されている場合は、それを使用
+            if new_template_path:
+                # 既存のテンプレートパス
+                target_path = os.path.join(settings.BASE_DIR, 'template.pptx')
+                
+                # 新しいテンプレートファイルをコピー
+                if os.path.exists(new_template_path) and new_template_path != target_path:
+                    # バックアップ作成
+                    if os.path.exists(target_path):
+                        backup_path = os.path.join(settings.BASE_DIR, 'template_backup.pptx')
+                        if os.path.exists(backup_path):
+                            os.remove(backup_path)
+                        shutil.copy2(target_path, backup_path)
+                    
+                    # 新しいファイルを適用
+                    shutil.copy2(new_template_path, target_path)
             
             return True
             
         except Exception as e:
-            print(f"テンプレートの編集中にエラーが発生しました: {e}")
+            print(f"テンプレート編集中にエラーが発生しました: {e}")
             return False
-        
+    
     @staticmethod
     def get_template_info():
         """
-        テンプレートPPTXのスライド情報を取得する
+        テンプレートPPTXの情報を取得する
         
         Returns:
-            dict: テンプレート情報
+            dict: テンプレート情報の辞書
         """
         template_path = os.path.join(settings.BASE_DIR, 'template.pptx')
         
-        if not os.path.exists(template_path):
-            return {
-                'exists': False,
-                'message': 'テンプレートファイルが見つかりません'
+        info = {
+            'exists': os.path.exists(template_path),
+            'slides': 0,
+            'layouts': []
+        }
+        
+        if info['exists']:
+            try:
+                # ファイルサイズ
+                info['size'] = os.path.getsize(template_path) // 1024  # KB単位
+                
+                # プレゼンテーション情報
+                prs = Presentation(template_path)
+                info['slides'] = len(prs.slides)
+                
+                # レイアウト情報
+                for i, layout in enumerate(prs.slide_layouts):
+                    layout_info = {
+                        'id': i,
+                        'name': layout.name if hasattr(layout, 'name') and layout.name else f"レイアウト {i+1}"
+                    }
+                    info['layouts'].append(layout_info)
+                
+            except Exception as e:
+                print(f"テンプレート情報取得中にエラー: {e}")
+                info['error'] = str(e)
+        
+        return info
+    
+    @staticmethod
+    def _create_presentation_with_template(template_path):
+        """
+        テンプレートからプレゼンテーションオブジェクトを作成する
+        
+        Args:
+            template_path (str, optional): テンプレートファイルのパス
+            
+        Returns:
+            Presentation: python-pptxのプレゼンテーションオブジェクト
+        """
+        if template_path and os.path.exists(template_path):
+            # テンプレートファイルが存在する場合はそれを使用
+            return Presentation(template_path)
+        else:
+            # テンプレートが無い場合は空のプレゼンテーションを作成
+            return Presentation()
+    
+    @staticmethod
+    def _analyze_template_layouts(presentation):
+        """
+        テンプレートのレイアウト情報を分析する
+        
+        Args:
+            presentation (Presentation): プレゼンテーションオブジェクト
+            
+        Returns:
+            dict: レイアウト情報を含む辞書
+        """
+        layouts = {}
+        
+        for i, layout in enumerate(presentation.slide_layouts):
+            layout_name = layout.name if hasattr(layout, 'name') and layout.name else f"Layout {i}"
+            
+            # レイアウトタイプを推測
+            layout_type = None
+            
+            # タイトルスライドの特徴を確認
+            title_placeholders = 0
+            for shape in layout.placeholders:
+                if shape.placeholder_format.type == 1:  # 1はタイトル
+                    title_placeholders += 1
+            
+            if "Title" in layout_name or "タイトル" in layout_name:
+                layout_type = "title"
+            elif title_placeholders == 1 and len(layout.placeholders) <= 3:
+                # 通常のコンテンツスライド（タイトルと本文）
+                layout_type = "content"
+            elif "Picture" in layout_name or "画像" in layout_name:
+                layout_type = "picture"
+            elif "Comparison" in layout_name or "比較" in layout_name:
+                layout_type = "comparison"
+            elif "Section" in layout_name or "セクション" in layout_name:
+                layout_type = "section"
+            else:
+                layout_type = "other"
+            
+            layouts[layout_type if layout_type else i] = {
+                'layout': layout,
+                'name': layout_name,
+                'index': i,
+                'placeholders': len(layout.placeholders)
             }
         
-        try:
-            prs = Presentation(template_path)
-            
-            slides_info = []
-            for i, slide in enumerate(prs.slides):
-                slide_info = {
-                    'index': i,
-                    'layout_name': f"レイアウト {i+1}",
-                }
-                
-                # タイトルがある場合は取得
-                if hasattr(slide, 'shapes') and hasattr(slide.shapes, 'title') and slide.shapes.title:
-                    slide_info['sample_title'] = slide.shapes.title.text
-                
-                slides_info.append(slide_info)
-            
-            return {
-                'exists': True,
-                'path': template_path,
-                'slide_count': len(prs.slides),
-                'slides': slides_info
+        # タイトルレイアウトがない場合は最初のレイアウトを使用
+        if 'title' not in layouts and len(presentation.slide_layouts) > 0:
+            layouts['title'] = {
+                'layout': presentation.slide_layouts[0],
+                'name': "First Layout (as Title)",
+                'index': 0,
+                'placeholders': len(presentation.slide_layouts[0].placeholders)
             }
-            
-        except Exception as e:
-            return {
-                'exists': False,
-                'message': f'テンプレートの読み込み中にエラーが発生しました: {str(e)}'
-            } 
+        
+        return layouts 

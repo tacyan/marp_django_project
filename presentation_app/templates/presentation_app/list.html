@@ -5,7 +5,6 @@
 
 <div class="btn-group mb-3">
     <a href="{% url 'create' %}" class="btn btn-primary">新規作成 (Markdown形式)</a>
-    <a href="{% url 'natural_language_create' %}" class="btn btn-success">新規作成 (自然言語形式)</a>
 </div>
 
 {% if presentations %}
@@ -22,16 +21,7 @@
         {% for presentation in presentations %}
         <tr>
             <td>{{ presentation.title }}</td>
-            <td>
-                {% if presentation.content_type == 'natural_language' %}
-                自然言語
-                {% if presentation.use_template %}
-                (テンプレート使用)
-                {% endif %}
-                {% else %}
-                Markdown ({{ presentation.theme }})
-                {% endif %}
-            </td>
+            <td>Markdown ({{ presentation.theme }})</td>
             <td>{{ presentation.updated_at|date:"Y/m/d H:i" }}</td>
             <td>
                 <a href="{% url 'edit' presentation.pk %}" class="btn btn-sm btn-info">編集</a>

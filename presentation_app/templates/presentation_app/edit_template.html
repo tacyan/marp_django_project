@@ -21,8 +21,8 @@
                 <div class="card-body">
                     {% if template_info.exists %}
                         <div class="mb-3">
-                            <p><strong>テンプレートファイル:</strong> {{ template_info.path }}</p>
-                            <p><strong>スライド数:</strong> {{ template_info.slide_count }}</p>
+                            <p><strong>スライド数:</strong> {{ template_info.slides }}</p>
+                            <p><strong>ファイルサイズ:</strong> {{ template_info.size }} KB</p>
                         </div>
                         
                         <div class="mb-3">
@@ -33,15 +33,13 @@
                                         <tr>
                                             <th>インデックス</th>
                                             <th>レイアウト名</th>
-                                            <th>サンプルタイトル</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for slide in template_info.slides %}
+                                        {% for layout in template_info.layouts %}
                                         <tr>
-                                            <td>{{ slide.index }}</td>
-                                            <td>{{ slide.layout_name }}</td>
-                                            <td>{{ slide.sample_title|default:"(なし)" }}</td>
+                                            <td>{{ layout.id }}</td>
+                                            <td>{{ layout.name }}</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -50,7 +48,11 @@
                         </div>
                     {% else %}
                         <div class="alert alert-warning">
-                            {{ template_info.message }}
+                            {% if template_info.error %}
+                                {{ template_info.error }}
+                            {% else %}
+                                テンプレートファイルが見つかりません
+                            {% endif %}
                         </div>
                     {% endif %}
                 </div>
@@ -67,7 +69,7 @@
                             <label for="template_file" class="form-label">テンプレートファイル (.pptx)</label>
                             <input type="file" name="template_file" id="template_file" class="form-control" accept=".pptx" required>
                             <div class="form-text">
-                                PowerPoint (.pptx) ファイルをアップロードしてください。このテンプレートは自然言語プレゼンテーションの生成に使用されます。
+                                PowerPoint (.pptx) ファイルをアップロードしてください。このテンプレートはプレゼンテーションの基本デザインとして使用されます。
                             </div>
                         </div>
                         
