@@ -391,7 +391,7 @@ theme: {theme}
             if "概要" in title or "まとめ" in title or len(title) <= 10:
                 chars_per_slide = MarpService.CHARS_PER_SLIDE['large']
                 font_size = 'large'
-            elif total_chars / len(points) >= 50:  # 平均文字数が多い場合
+            elif len(points) > 0 and total_chars / len(points) >= 50:  # 平均文字数が多い場合
                 chars_per_slide = MarpService.CHARS_PER_SLIDE['small']
                 font_size = 'small'
             else:
@@ -399,7 +399,9 @@ theme: {theme}
                 font_size = 'medium'
             
             # 必要なスライド数を計算
-            num_slides_needed = math.ceil(total_chars / chars_per_slide)
+            num_slides_needed = 1
+            if total_chars > 0:
+                num_slides_needed = math.ceil(total_chars / chars_per_slide)
             
             if num_slides_needed <= 1:
                 # 1スライドで足りる場合はそのまま追加
